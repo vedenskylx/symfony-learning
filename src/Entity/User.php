@@ -1,0 +1,147 @@
+<?php
+
+namespace App\Entity;
+
+use App\Repository\UserRepository;
+use Doctrine\ORM\Mapping as ORM;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Ramsey\Uuid\Doctrine\UuidGenerator;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: '`user`')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
+{
+    const ROLE_USER = ["ROLE_USER"];
+
+    #[ORM\Id]
+    #[ORM\Column(type: 'uuid', unique: true)]
+    #[ORM\GeneratedValue(strategy: "CUSTOM")]
+    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    /** @Groups({"public"}) */
+    private string $id;
+
+    #[ORM\Column(type: 'string', length: 180, unique: true)]
+    #[Assert\NotBlank]
+    /** @Groups({"public"}) */
+    private string $email;
+
+    #[ORM\Column(type: 'json')]
+    #[Assert\NotBlank]
+    private array $roles = [];
+
+    #[ORM\Column(type: 'string')]
+    #[Assert\NotBlank]
+    private string $password;
+
+    /** @var string */
+    private string $token;
+
+    /**
+     * @var JWTTokenManagerInterface
+     */
+    private JWTTokenManagerInterface $jwtManager;
+
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getUsername(): ?string
+    {
+        return $this->email;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUserIdentifier(): string
+    {
+        return (string)$this->email;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * @see PasswordAuthenticatedUserInterface
+     */
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function eraseCredentials()
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
+    }
+
+    /**
+     * @param JWTTokenManagerInterface|null $jwtManager
+     */
+    public function __construct(
+        JWTTokenManagerInterface $jwtManager = null
+    ) {
+        if (!is_null($jwtManager)) {
+            $this->jwtManager = $jwtManager;
+        }
+    }
+
+    /** @Groups({"registration"}) */
+    public function getToken(): ?string
+    {
+        if(!empty($this->jwtManager)){
+            return $this->jwtManager->create($this);
+        } else {
+            return null;
+        }
+    }
+
+}
