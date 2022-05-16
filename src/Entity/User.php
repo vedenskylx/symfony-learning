@@ -6,30 +6,48 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+#[UniqueEntity('email')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface, EntityInterface
 {
     const ROLE_USER = ["ROLE_USER"];
+
+    /**
+     * @param string $email
+     * @param string $password
+     * @param UserPasswordHasherInterface $hash
+     * @param JWTTokenManagerInterface $jwtManager
+     */
+    public function __construct(
+        string $email,
+        string $password,
+        UserPasswordHasherInterface $hash,
+        private readonly JWTTokenManagerInterface $jwtManager
+    ) {
+        $this->setEmail($email);
+        $this->setRoles(User::ROLE_USER);
+        $this->setPassword($hash->hashPassword($this, $password));
+    }
 
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: "CUSTOM")]
     #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
-    /** @Groups({"public"}) */
+    #[Groups(['public'])]
     private string $id;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
     #[Assert\NotBlank]
-    /** @Groups({"public"}) */
+    #[Assert\Length(min: 2, max: 100)]
+    #[Groups(['public'])]
     private string $email;
 
     #[ORM\Column(type: 'json')]
@@ -43,26 +61,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** @var string */
     private string $token;
 
-    /**
-     * @var JWTTokenManagerInterface
-     */
-    private JWTTokenManagerInterface $jwtManager;
-
     public function getId(): ?string
     {
         return $this->id;
     }
 
+    /**
+     * @return string|null
+     */
     public function getUsername(): ?string
     {
         return $this->email;
     }
 
+    /**
+     * @return string|null
+     */
     public function getEmail(): ?string
     {
         return $this->email;
     }
 
+    /**
+     * @param string $email
+     * @return $this
+     */
     public function setEmail(string $email): self
     {
         $this->email = $email;
@@ -86,12 +109,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
         return array_unique($roles);
     }
 
+    /**
+     * @param array $roles
+     * @return $this
+     */
     public function setRoles(array $roles): self
     {
         $this->roles = $roles;
@@ -107,6 +133,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
+    /**
+     * @param string $password
+     * @return $this
+     */
     public function setPassword(string $password): self
     {
         $this->password = $password;
@@ -123,21 +153,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // $this->plainPassword = null;
     }
 
-    /**
-     * @param JWTTokenManagerInterface|null $jwtManager
-     */
-    public function __construct(
-        JWTTokenManagerInterface $jwtManager = null
-    ) {
-        if (!is_null($jwtManager)) {
-            $this->jwtManager = $jwtManager;
-        }
-    }
-
-    /** @Groups({"registration"}) */
+    #[Groups(['registration'])]
     public function getToken(): ?string
     {
-        if(!empty($this->jwtManager)){
+        if (!empty($this->jwtManager)) {
             return $this->jwtManager->create($this);
         } else {
             return null;

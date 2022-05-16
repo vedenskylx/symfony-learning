@@ -14,7 +14,7 @@ use Ramsey\Uuid\Doctrine\UuidGenerator;
 use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[Entity(repositoryClass: CommentRepository::class)]
-class Comment
+class Comment implements EntityInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]

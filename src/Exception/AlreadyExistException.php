@@ -7,7 +7,7 @@ use PhpParser\Builder\Class_;
 
 class AlreadyExistException extends \RuntimeException
 {
-    const ALREADY_EXIST_ERROR_TEMPLATE = "'%s' %s already exist!";
+    const ALREADY_EXIST_ERROR_TEMPLATE = "Validation error: %s %s already exist!";
 
     public function __construct(string $entity, string $title)
     {

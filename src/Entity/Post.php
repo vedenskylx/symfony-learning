@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping\OneToMany;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 
 #[Entity(repositoryClass: PostRepository::class)]
-class Post
+class Post implements EntityInterface
 {
     #[ORM\Id]
     #[ORM\Column(type:'uuid', unique:true)]

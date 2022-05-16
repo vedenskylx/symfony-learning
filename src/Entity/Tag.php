@@ -16,7 +16,7 @@ use Ramsey\Uuid\Doctrine\UuidGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[Entity(repositoryClass: TagRepository::class)]
-class Tag
+class Tag implements EntityInterface
 {
     #[ORM\Id]
     #[ORM\Column(type:'uuid', unique:true)]

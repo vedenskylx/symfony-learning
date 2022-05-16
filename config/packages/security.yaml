@@ -23,6 +23,6 @@ security:
                 check_path: /api/refresh
     access_control:
         - { path: /api/(login|refresh), roles: PUBLIC_ACCESS }
-        - { path: /api/register, roles: PUBLIC_ACCESS }
+        - { path: /api/user/register, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
