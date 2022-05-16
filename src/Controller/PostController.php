@@ -3,15 +3,10 @@
 namespace App\Controller;
 
 use App\ArgumentResolver\QueryParam;
-use App\Entity\Comment;
-use App\Exception\CommentNotFoundException;
-use App\Exception\PostNotFoundException;
-use App\Repository\CommentRepository;
-use App\Repository\PostRepository;
 use App\Annotation\Get;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Services\Post as PostService;
+use App\Builder\Post as PostBuilder;
+use FOS\RestBundle\View\View;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -19,15 +14,16 @@ use Symfony\Component\Routing\Annotation\Route;
 class PostController extends AbstractController
 {
     /**
-     * @param \App\Repository\PostRepository $posts
-     * @param \App\Repository\CommentRepository $comments
-     * @param \Doctrine\ORM\EntityManagerInterface $manager
+     * PostController constructor.
+     *
+     * @param PostService $service
+     * @param PostBuilder $builder
      */
     public function __construct(
-        private readonly PostRepository $posts,
-        private readonly CommentRepository $comments,
-        private readonly EntityManagerInterface $manager
+        PostService $service,
+        PostBuilder $builder
     ) {
+        parent::__construct($service, $builder);
     }
 
     #[Get (path: "", name: "all")]
@@ -35,72 +31,40 @@ class PostController extends AbstractController
         #[QueryParam] string $keyword,
         #[QueryParam] int $offset = 0,
         #[QueryParam] int $limit = 20
-    ): JsonResponse {
-        return new JsonResponse(
-            $this->posts->findByKeyword($keyword ?: '', $offset, $limit),
-            Response::HTTP_OK,
-            [],
-            false
-        );
+    ): Response {
+        return parent::getSearchAction($keyword ?: '', $offset, $limit);
     }
 
-    #[Route(path: "/{id}", name: "byId", methods: ["GET"])]
-    function getById(string $id): Response
+    #[Route(path: "/{id}", name: "detail", methods: ["GET"])]
+    function detail(string $id): Response
     {
-        if (!($data = $this->posts->detailById($id))) {
-            throw new PostNotFoundException($id);
-        }
-
-        return new JsonResponse(
-            $data,
-            Response::HTTP_OK,
-            [],
-            false
-        );
+        return parent::getAction($id, ['detail']);
     }
 
     #[Route(path: "/{id}/add-comment", name: "addComment", methods: ["POST"])]
     function addComment(
         string $id,
         #[QueryParam('comment', true)] string $comment
-    ): JsonResponse {
-        if (!($post = $this->posts->findOneBy(["id" => $id]))) {
-            throw new PostNotFoundException($id);
-        }
+    ): Response {
 
-        $comment = Comment::of($comment)->setUser($this->getUser());
-        $post->addComment($comment);
-        $this->manager->persist($post);
-        $this->manager->flush();
-
-        return new JsonResponse(
-            $comment,
-            Response::HTTP_OK,
-            [],
-            false
-        );
+        return $this->handleView(new View(
+            $this->service->createComment($id, $comment, $this->getUser()),
+            Response::HTTP_OK
+        ), ['detail']);
     }
 
     /**
      * @throws \Exception
      */
-    #[Route(path: "/{id}/delete-comment/{comment_id}", name: "deleteComment", methods: ["POST"])]
+    #[Route(path: "/{id}/delete-comment/{comment_id}", name: "deleteComment", methods: ["DELETE"])]
     function deleteComment(
         string $id,
         string $comment_id
-    ): JsonResponse {
+    ): Response {
 
-        $user_id = $this->getUser()->getId();
-
-        if (!($comment = $this->comments->findOneBy([
-            'id'   => $comment_id,
-            'post' => $id,
-            'user' => $user_id
-        ]))) {
-            throw new CommentNotFoundException($comment_id, $user_id, $id);
-        }
-        $this->manager->remove($comment);
-        $this->manager->flush();
-        return new JsonResponse([], Response::HTTP_OK, [], false);
+        return $this->handleView(new View(
+            $this->service->deleteComment($id, $comment_id, $this->getUser()),
+            Response::HTTP_OK
+        ), ['detail']);
     }
 }

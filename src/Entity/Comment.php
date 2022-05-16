@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\JoinColumn;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[Entity(repositoryClass: CommentRepository::class)]
@@ -20,9 +21,11 @@ class Comment implements EntityInterface
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: "CUSTOM")]
     #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    #[Groups(['list', 'detail'])]
     private ?string $id = null;
 
     #[Column(type: "string", length: 255)]
+    #[Groups(['list', 'detail'])]
     private string $content;
 
     #[Column(name: "created_at", type: "datetime", nullable: true)]
@@ -31,12 +34,12 @@ class Comment implements EntityInterface
     #[ManyToOne(targetEntity: "User", inversedBy: "comments")]
     #[JoinColumn(name: "user_id", referencedColumnName: "id")]
     #[Ignore]
+    #[Groups(['detail'])]
     private User $user;
 
     #[ManyToOne(targetEntity: "Post", inversedBy: "comments")]
-    #[JoinColumn(name: "post_id", referencedColumnName: "id")]
-    #[Ignore]
-    private Post $post;
+    #[JoinColumn(name: "post_id", referencedColumnName: "id", nullable: false)]
+    private ?Post $post;
 
     public function __construct()
     {
@@ -91,10 +94,10 @@ class Comment implements EntityInterface
     }
 
     /**
-     * @param \App\Entity\Post $post
+     * @param Post|null $post
      * @return $this
      */
-    public function setPost(Post $post): self
+    public function setPost(?Post $post): self
     {
         $this->post = $post;
         return $this;

@@ -2,45 +2,32 @@
 
 namespace App\Dto;
 
-class UserPublicDto
+/**
+ * Class UserPublicDto
+ * @package App\Dto
+ */
+class UserPublicDto extends AbstractDetailDto implements DtoDetailInterface
 {
-    /** @var string */
-    public string $id;
-
-    /** @var string */
-    public string $email;
+    /**
+     * UserPublicDto constructor.
+     *
+     * @param string $id
+     * @param string $email
+     */
+    public function __construct(
+        string $id,
+        public string $email
+    ) {
+        parent::__construct($id);
+    }
 
     /**
      * @param string $id
      * @param string $email
      * @return UserPublicDto
      */
-    static function of(string $id, string $email): UserPublicDto
+    static function of(string $id, string $email): AbstractDetailDto
     {
-        $dto = new UserPublicDto();
-        $dto->setId($id)
-            ->setEmail($email);
-
-        return $dto;
-    }
-
-    /**
-     * @param string $id
-     * @return $this
-     */
-    public function setId(string $id): self
-    {
-        $this->id = $id;
-        return $this;
-    }
-
-    /**
-     * @param string $email
-     * @return $this
-     */
-    public function setEmail(string $email): self
-    {
-        $this->email = $email;
-        return $this;
+        return new UserPublicDto($id, $email);
     }
 }

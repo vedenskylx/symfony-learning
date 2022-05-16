@@ -5,10 +5,10 @@ namespace App\Dto;
 use Doctrine\Common\Collections\Collection;
 
 /**
- * Class Page
+ * Class DtoListInterface
  * @package App\Dto
  */
-class Page extends AbstractListDto implements DtoListInterface
+interface DtoListInterface
 {
     /**
      * @param Collection $content
@@ -22,7 +22,5 @@ class Page extends AbstractListDto implements DtoListInterface
         int $totalElements,
         int $offset = 0,
         int $limit = 20
-    ): AbstractListDto {
-        return new Page($content, $totalElements, $offset, $limit);
-    }
+    ): AbstractListDto;
 }

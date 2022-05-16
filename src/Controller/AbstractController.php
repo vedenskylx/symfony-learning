@@ -23,6 +23,21 @@ abstract class AbstractController extends AbstractFOSRestController
     }
 
     /**
+     * @param string $q
+     * @param int $offset
+     * @param int $limit
+     * @param array $groups
+     * @return Response
+     */
+    public function getSearchAction(string $q, int $offset = 0, int $limit = 20, array $groups = []): Response
+    {
+        return $this->handleView(new View(
+            $this->service->search($q, $offset, $limit),
+            Response::HTTP_OK
+        ), $groups);
+    }
+
+    /**
      * @param array $groups
      * @return Response
      */

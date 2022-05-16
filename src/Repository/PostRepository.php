@@ -2,16 +2,18 @@
 
 namespace App\Repository;
 
-use App\Dto\Page;
-use App\Dto\PostDetailDto;
-use App\Dto\PostSummaryDto;
-use App\Entity\Post;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use App\Dto\{Page, AbstractListDto, PostSummaryDto};
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Entity\Post;
 
-class PostRepository extends ServiceEntityRepository
+/**
+ * Class PostRepository
+ * @package App\Repository
+ */
+class PostRepository extends ServiceEntityRepository implements RepositoryInterface
 {
     /**
      * @param ManagerRegistry $registry
@@ -27,7 +29,7 @@ class PostRepository extends ServiceEntityRepository
      * @param int $limit
      * @return Page
      */
-    public function findByKeyword(string $q, int $offset = 0, int $limit = 20): Page
+    public function search(string $q, int $offset = 0, int $limit = 20): AbstractListDto
     {
         $query = $this->createQueryBuilder("p")
             ->andWhere("p.title like :q or p.content like :q")
@@ -47,35 +49,5 @@ class PostRepository extends ServiceEntityRepository
         }
 
         return Page::of($content, $c, $offset, $limit);
-    }
-
-    /**
-     * @param string $id
-     * @return PostSummaryDto|null
-     */
-    public function findById(string $id): ?PostSummaryDto
-    {
-        $post = $this->findOneBy(["id" => $id]);
-
-        if ($post) {
-            $post = PostSummaryDto::of($post->getId(), $post->getTitle(), $post->getContent());
-        }
-
-        return $post;
-    }
-
-    /**
-     * @param string $id
-     * @return PostDetailDto|null
-     */
-    public function detailById(string $id): ?PostDetailDto
-    {
-        $post = $this->findOneBy(["id" => $id]);
-
-        if ($post) {
-            $post = PostDetailDto::of($post->getId(), $post->getTitle(), $post->getContent(), $post->getComments());
-        }
-
-        return $post;
     }
 }

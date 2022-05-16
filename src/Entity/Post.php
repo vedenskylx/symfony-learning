@@ -17,8 +17,23 @@ use Ramsey\Uuid\Doctrine\UuidGenerator;
 #[Entity(repositoryClass: PostRepository::class)]
 class Post implements EntityInterface
 {
+    /**
+     * @param string $title
+     * @param string $content
+     */
+    public function __construct(
+        string $title,
+        string $content
+    ) {
+        $this->createdAt = new DateTime();
+        $this->comments = new ArrayCollection();
+        $this->tags = new ArrayCollection();
+        $this->setTitle($title);
+        $this->setContent($content);
+    }
+
     #[ORM\Id]
-    #[ORM\Column(type:'uuid', unique:true)]
+    #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: "CUSTOM")]
     #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
     #[Groups(['list', 'detail'])]
@@ -41,19 +56,12 @@ class Post implements EntityInterface
     #[OneToMany(mappedBy: "post", targetEntity: Comment::class, cascade: [
         'persist',
         'merge',
-        "remove"
+        'remove'
     ], fetch: 'LAZY', orphanRemoval: true)]
     private Collection $comments;
 
     #[ManyToMany(targetEntity: Tag::class, mappedBy: "posts", cascade: ['persist', 'merge'], fetch: 'EAGER')]
     private Collection $tags;
-
-    public function __construct()
-    {
-        $this->createdAt = new DateTime();
-        $this->comments = new ArrayCollection();
-        $this->tags = new ArrayCollection();
-    }
 
     /**
      * @return ?string

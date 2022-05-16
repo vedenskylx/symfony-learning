@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Builder\BuilderInterface;
+use App\Dto\AbstractListDto;
 use App\Entity\EntityInterface;
+use App\Repository\RepositoryInterface;
 use App\Services\Validation\AbstractValidation;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 abstract class AbstractService
 {
@@ -15,17 +16,28 @@ abstract class AbstractService
      * AbstractService constructor.
      * @param BuilderInterface $builder
      * @param AbstractValidation $validator
-     * @param ServiceEntityRepository $repository
+     * @param RepositoryInterface $repository
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
      */
     public function __construct(
         private readonly BuilderInterface $builder,
         protected AbstractValidation $validator,
-        protected ServiceEntityRepository $repository,
+        protected RepositoryInterface $repository,
         protected EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger
     ) {
+    }
+
+    /**
+     * @param string $q
+     * @param int $offset
+     * @param int $limit
+     * @return AbstractListDto
+     */
+    public function search(string $q, int $offset = 0, int $limit = 20): AbstractListDto
+    {
+        return $this->repository->search($q, $offset, $limit);
     }
 
     /**
@@ -82,7 +94,7 @@ abstract class AbstractService
      * @param array $params
      * @return EntityInterface|null
      */
-    public function update(array $params): ?EntityInterface
+    public function update(array $params = []): ?EntityInterface
     {
         $this->validator->validateUpdate($this, $params);
         return static::save($params);

@@ -4,14 +4,19 @@ namespace App\Factory;
 
 use App\Entity\Post;
 
-
+/**
+ * Class PostFactory
+ * @package App\Factory
+ */
 class PostFactory
 {
+    /**
+     * @param string $title
+     * @param string $content
+     * @return \App\Entity\Post
+     */
     public static function create(string $title, string $content): Post
     {
-        $post = new Post();
-        $post->setTitle($title);
-        $post->setContent($content);
-        return $post;
+        return new Post($title, $content);
     }
 }
