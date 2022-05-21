@@ -29,7 +29,6 @@ class News
      */
     public function getContent(): string
     {
-
         return sprintf('%s %s', $this->content, $this->url);
     }
 }

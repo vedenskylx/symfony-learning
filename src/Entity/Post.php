@@ -9,12 +9,14 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\OneToMany;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 
 #[Entity(repositoryClass: PostRepository::class)]
+#[UniqueEntity('title')]
 class Post implements EntityInterface
 {
     /**

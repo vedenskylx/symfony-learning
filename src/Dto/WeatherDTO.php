@@ -4,8 +4,15 @@ namespace App\Dto;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Class WeatherDTO
+ * @package App\Dto
+ */
 class WeatherDTO
 {
+    const POST_TITLE_TEMPLATE = 'Погода в городе %s, %s';
+    const POST_CONTENT_TEMPLATE = 'Температура в городе %s: %s˚C, ощущается как %s˚C. Скорость ветра: %sм/с.';
+
     #[Assert\NotBlank]
     public string $name;
 
@@ -37,14 +44,24 @@ class WeatherDTO
     /**
      * @return string
      */
-    public function getName(): string
+    public function getTitle(): string
     {
-        return  preg_replace('%[^a-zа-я\d]%i', '', $this->name);
+        return sprintf(self::POST_TITLE_TEMPLATE, $this->getName(), date("m.d.y, g:i a"));
     }
 
-    public function __toString(): string
+    /**
+     * @return string
+     */
+    public function getContent(): string
     {
-        $template = 'Температура в городе %s: %s˚C, ощущается как %s˚C. Скорость ветра: %sм/с.';
-        return sprintf($template, $this->getName(), $this->temp, $this->feels_like, $this->wind);
+        return sprintf(self::POST_CONTENT_TEMPLATE, $this->getName(), $this->temp, $this->feels_like, $this->wind);
+    }
+
+    /**
+     * @return string
+     */
+    private function getName(): string
+    {
+        return preg_replace('%[^a-zа-я\d]%i', '', $this->name);
     }
 }

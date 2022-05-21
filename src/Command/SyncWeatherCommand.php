@@ -17,26 +17,27 @@ use Symfony\Component\Messenger\MessageBusInterface;
 class SyncWeatherCommand extends Command
 {
     /**
-     * @var \Symfony\Component\Messenger\MessageBusInterface
-     */
-    private MessageBusInterface $bus;
-
-    /**
-     * @param \Symfony\Component\Messenger\MessageBusInterface $bus
+     * @param MessageBusInterface $bus
      */
     public function __construct(
-        MessageBusInterface $bus
+        private readonly MessageBusInterface $bus
     ) {
         parent::__construct();
-        $this->bus = $bus;
     }
 
+    /**
+     * @return void
+     */
     protected function configure(): void
     {
-        $this
-            ->addArgument('city', InputArgument::REQUIRED, 'Title of city');
+        $this->addArgument('city', InputArgument::REQUIRED, 'Title of city');
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->bus->dispatch(new Weather($input->getArgument('city')));

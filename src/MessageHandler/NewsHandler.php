@@ -2,47 +2,46 @@
 
 namespace App\MessageHandler;
 
-use App\Dto\WeatherDTO;
-use App\Entity\Tag;
-use App\Factory\PostFactory;
-use App\Message\News;
-use App\Message\Weather;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use \Symfony\Contracts\HttpClient\Exception\{
-    ClientExceptionInterface,
-    DecodingExceptionInterface,
-    RedirectionExceptionInterface,
-    ServerExceptionInterface,
-    TransportExceptionInterface
-};
+use App\Services\Post as PostService;
+use App\Builder\Post as PostBuilder;
+use Psr\Log\LoggerInterface;
+use App\Message\News;
 
-
-class NewsHandler implements MessageHandlerInterface
+/**
+ * Class NewsHandler
+ * @package App\MessageHandler
+ */
+class NewsHandler extends AbstractMessageHandler implements MessageHandlerInterface
 {
-    const TAG = 'News';
-
     /**
-     * @param \Doctrine\ORM\EntityManagerInterface $manager
+     * NewsHandler constructor.
+     *
+     * @param PostService $service
+     * @param PostBuilder $builder
+     * @param LoggerInterface $logger
      */
     public function __construct(
-        private readonly EntityManagerInterface $manager
+        PostService $service,
+        PostBuilder $builder,
+        private readonly LoggerInterface $logger
     ) {
+        parent::__construct($service, $builder);
     }
 
     /**
-     * @param \App\Message\News $message
+     * @param News $message
      * @return void
      */
-    public function __invoke(
-        News $message,
-    ): void {
-        $entity = PostFactory::create($message->getTitle(), $message->getContent());
-        $entity->addTag(Tag::of(self::TAG));
-        $this->manager->persist($entity);
-        $this->manager->flush();
+    public function __invoke(News $message): void
+    {
+        try {
+            $this->service->create([
+                'title'   => $message->getTitle(),
+                'content' => $message->getContent()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error($e);
+        }
     }
 }

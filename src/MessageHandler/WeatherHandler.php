@@ -3,10 +3,8 @@
 namespace App\MessageHandler;
 
 use App\Dto\WeatherDTO;
-use App\Entity\Tag;
-use App\Factory\PostFactory;
 use App\Message\Weather;
-use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
@@ -18,23 +16,31 @@ use \Symfony\Contracts\HttpClient\Exception\{
     ServerExceptionInterface,
     TransportExceptionInterface
 };
+use App\Services\Post as PostService;
+use App\Builder\Post as PostBuilder;
 
-
-class WeatherHandler implements MessageHandlerInterface
+/**
+ * Class WeatherHandler
+ * @package App\MessageHandler
+ */
+class WeatherHandler extends AbstractMessageHandler implements MessageHandlerInterface
 {
-    const POST_TITLE_TEMPLATE = 'Погода в городе %s, %s';
-    const TAG = 'Weather';
-
     /**
-     * @param \Symfony\Contracts\HttpClient\HttpClientInterface $client
-     * @param \Doctrine\ORM\EntityManagerInterface $manager
-     * @param \Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface $params
+     * WeatherHandler constructor.
+     * @param PostService $service
+     * @param PostBuilder $builder
+     * @param HttpClientInterface $client
+     * @param ParameterBagInterface $params
+     * @param \Psr\Log\LoggerInterface $logger
      */
     public function __construct(
+        PostService $service,
+        PostBuilder $builder,
         private readonly HttpClientInterface $client,
-        private readonly EntityManagerInterface $manager,
-        private readonly ParameterBagInterface $params
+        private readonly ParameterBagInterface $params,
+        private readonly LoggerInterface $logger
     ) {
+        parent::__construct($service, $builder);
     }
 
     /**
@@ -49,29 +55,34 @@ class WeatherHandler implements MessageHandlerInterface
      */
     public function __invoke(
         Weather $message,
-    ) {
-        $response = $this->client->request(
-            'GET',
-            'https://api.openweathermap.org/data/2.5/weather',
-            [
-                'query' => [
-                    'q'     => $message->getCity(),
-                    'appid' => $this->params->get('app.weather_api_key'),
-                    'units' => 'metric'
+    ): void {
+        try {
+            $response = $this->client->request(
+                'GET',
+                'https://api.openweathermap.org/data/2.5/weather',
+                [
+                    'query' => [
+                        'q'     => $message->getCity(),
+                        'appid' => $this->params->get('app.weather_api_key'),
+                        'units' => 'metric'
+                    ]
                 ]
-            ]
-        );
+            );
 
-        if ($response->getStatusCode() == Response::HTTP_OK) {
-            $content = $response->toArray();
-            $weather = WeatherDTO::load($content);
-            $post = PostFactory::create(sprintf(self::POST_TITLE_TEMPLATE, $weather->getName(), date("m.d.y, g:i a")), $weather->__toString());
-            $post->addTag(Tag::of(self::TAG));
-            $entity = $post;
-            $this->manager->persist($entity);
-            $this->manager->flush();
-        } else {
-            throw new \Exception(sprintf('Request error, status: %s', $response->getStatusCode()));
+            if ($response->getStatusCode() == Response::HTTP_OK) {
+
+                $dto = WeatherDTO::load($response->toArray());
+
+                $this->service->create([
+                    'title'   => $dto->getTitle(),
+                    'content' => $dto->getContent()
+                ]);
+
+            } else {
+                throw new \Exception(sprintf('Request error, status: %s', $response->getStatusCode()));
+            }
+        } catch (\Exception $e) {
+            $this->logger->error($e);
         }
     }
 }
